@@ -41,6 +41,7 @@ export const register = async (req, res) => {
             You Account has been created with email id: ${email}`
         };
         
+        
         await transporter.sendMail(mailOptions);
 
         return res.json({ success: true });
