@@ -5,7 +5,8 @@ import transporter from "../config/nodemailer.js";
 import 'dotenv/config';
 
 export const register = async (req, res) => {
-    const { name, email, password } = req.body;
+    let { name, email, password } = req.body;
+    email = email.toLowerCase();
 
     if (!name || !email || !password) {
         return res.json({ success: false, message: 'Missing details' })
@@ -38,10 +39,10 @@ export const register = async (req, res) => {
             to: email,
             subject: 'Welcome to Car Rental',
             text: `Welcome to Car Rental Website. 
-            You Account has been created with email id: ${email}`
+            Your account has been created with email ID: ${email}`
         };
-        
-        
+
+
         await transporter.sendMail(mailOptions);
 
         return res.json({ success: true });
@@ -53,7 +54,8 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    email = email.toLowerCase();
 
     if (!email || !password) {
         return res.json({ success: false, message: 'Email and password are required' });
@@ -102,3 +104,65 @@ export const logout = async (req, res) => {
         return res.json({ success: false, message: error.message });
     }
 };
+
+export const sendVerifyOtp = async (req, res) => {
+    try {
+        const { userID } = req.body;
+
+        const user = await userModel.findById(userID);
+
+        if (user.isAccountVerified) {
+            return res.json({ success: false, message: "Account Already verified" })
+        }
+
+        const otp = String(Math.floor(100000 + Math.random() * 900000))
+
+        user.VerifyOtp = otp;
+        user.verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000;
+
+        await user.save();
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL,
+            to: user.email,
+            subject: 'Account Verification OTP',
+            text: `Your OTP is ${otp}. Verify your Account using this OTP.`
+        }
+        await transporter.sendMail(mailOptions);
+
+        res.json({ success: true, message: 'Verification OTP sent to email' });
+
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+}
+
+export const verifyEmail = async (req, res) => {
+    const { userID, otp } = req.body;
+
+    if (!userID || !otp) {
+        return res.json({ success: false, message: 'Missing Details' });
+    }
+    try {
+        const user = await userModel.findById(userID);
+
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        if (user.verifyOtp === '' || user.verifyOtp !== otp) {
+            return res.json({ success: false, message: 'Invalid OTP' });
+        }
+        if (!user.verifyOtpExpireAt || user.verifyOtpExpireAt < Date.now()) {
+            return res.json({ success: false, message: 'OTP expired' });
+        }
+        user.isAccountVerified = true;
+        user.verifyOtp = '';
+        user.verifyOtpExpireAt = 0;
+
+        await user.save();
+        return res.json({ success: true, message: 'Email verified successfully' })
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+}
