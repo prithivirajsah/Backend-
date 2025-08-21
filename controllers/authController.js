@@ -3,6 +3,7 @@ import userModel from '../models/usermodel.js';
 import jwt from "jsonwebtoken";
 import transporter from "../config/nodemailer.js";
 import 'dotenv/config';
+import { json } from "express";
 
 export const register = async (req, res) => {
     let { name, email, password } = req.body;
@@ -117,7 +118,7 @@ export const sendVerifyOtp = async (req, res) => {
 
         const otp = String(Math.floor(100000 + Math.random() * 900000))
 
-        user.VerifyOtp = otp;
+        user.verifyOtp = otp;
         user.verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000;
 
         await user.save();
@@ -152,7 +153,7 @@ export const verifyEmail = async (req, res) => {
         if (user.verifyOtp === '' || user.verifyOtp !== otp) {
             return res.json({ success: false, message: 'Invalid OTP' });
         }
-        if (!user.verifyOtpExpireAt || user.verifyOtpExpireAt < Date.now()) {
+        if (user.verifyOtpExpireAt < Date.now()) {
             return res.json({ success: false, message: 'OTP expired' });
         }
         user.isAccountVerified = true;
@@ -166,3 +167,34 @@ export const verifyEmail = async (req, res) => {
         return res.json({ success: false, message: error.message });
     }
 }
+
+export const isAuthenticated = async (req, res) => {
+    try{
+        return res.json({ success: true });
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+}
+
+// send password reset otp
+export const sendPasswordResetOtp = async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.json({success: false, message: 'Email is required'})
+    }
+
+    try{
+        const user = await userModel.findOne({email});
+        if(!user){
+            return res.json({success: false, message: 'User not found'})
+        }
+        const otp = String(Math.floor(100000 + Math.random() * 900000));
+
+        user.ResetOtp = otp;
+        user.ResetOtpExpireAt = Date.now() + 10 * 60 * 1000;
+    }
+    catch(error) {
+        return res.json({success: false, message: error.message });
+    }
+} 
