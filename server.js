@@ -11,14 +11,12 @@ const app = express();
 const port = process.env.PORT || 4000;
 connectDB();
 
-
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
     origin: "http://localhost:3000", 
     credentials: true
 }));
-
 
 app.get('/', (req, res) => res.send("API Working"));
 app.use('/api/auth', authRouter);
@@ -30,6 +28,23 @@ app.use((err, req, res, next) => {
         return res.status(400).json({ success: false, message: 'Invalid JSON payload' });
     }
     next(err);
+});
+
+// General error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({ 
+        success: false, 
+        message: 'Internal server error' 
+    });
+});
+
+// 404 handler for undefined routes
+app.use('*', (req, res) => {
+    res.status(404).json({ 
+        success: false, 
+        message: 'Route not found' 
+    });
 });
 
 app.listen(port, () => console.log(`Server started on PORT:${port}`));
