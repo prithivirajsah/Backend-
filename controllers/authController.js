@@ -7,7 +7,7 @@ import { json } from "express";
 
 export const register = async (req, res) => {
     let { name, email, password } = req.body;
-    email = email.toLowerCase();
+    email = (email || '').toLowerCase();
 
     if (!name || !email || !password) {
         return res.json({ success: false, message: 'Missing details' })
@@ -34,17 +34,25 @@ export const register = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
+        // Determine sender email
+        const senderEmail = process.env.SENDER_EMAIL || process.env.EMAIL_USER || process.env.SMTP_USER;
+        if (!senderEmail) {
+            console.error('No SENDER_EMAIL/EMAIL_USER/SMTP_USER configured. Cannot send email.');
+        }
+
         // sending welcome email
         const mailOptions = {
-            from: process.env.SENDER_EMAIL,
+            from: senderEmail,
             to: email,
             subject: 'Welcome to Car Rental',
-            text: `Welcome to Car Rental Website. 
-            Your account has been created with email ID: ${email}`
+            text: `Welcome to Car Rental Website. \nYour account has been created with email ID: ${email}`
         };
 
-
-        await transporter.sendMail(mailOptions);
+        try {
+            await transporter.sendMail(mailOptions);
+        } catch (mailErr) {
+            console.error('Failed to send welcome email:', mailErr?.message || mailErr);
+        }
 
         return res.json({ success: true });
 
@@ -56,7 +64,7 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
     let { email, password } = req.body;
-    email = email.toLowerCase();
+    email = (email || '').toLowerCase();
 
     if (!email || !password) {
         return res.json({ success: false, message: 'Email and password are required' });
@@ -122,13 +130,20 @@ export const sendVerifyOtp = async (req, res) => {
         user.verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000;
 
         await user.save();
+
+        const senderEmail = process.env.SENDER_EMAIL || process.env.EMAIL_USER || process.env.SMTP_USER;
         const mailOptions = {
-            from: process.env.SENDER_EMAIL,
+            from: senderEmail,
             to: user.email,
             subject: 'Account Verification OTP',
             text: `Your OTP is ${otp}. Verify your Account using this OTP.`
         }
-        await transporter.sendMail(mailOptions);
+
+        try {
+            await transporter.sendMail(mailOptions);
+        } catch (mailErr) {
+            console.error('Failed to send verification OTP email:', mailErr?.message || mailErr);
+        }
 
         res.json({ success: true, message: 'Verification OTP sent to email' });
 
@@ -195,15 +210,19 @@ export const sendResetOtp = async (req, res) => {
 
         await user.save();
 
+        const senderEmail = process.env.SENDER_EMAIL || process.env.EMAIL_USER || process.env.SMTP_USER;
         const mailOptions = {
-            from: process.env.SENDER_EMAIL,
+            from: senderEmail,
             to: user.email,
             subject: 'Password Reset OTP',
-            text: `Your OTP for resetting your password is ${otp}.
-            Use this OTP to proceed with resetting your password.`
+            text: `Your OTP for resetting your password is ${otp}.\nUse this OTP to proceed with resetting your password.`
         };
 
-        await transporter.sendMail(mailOptions);
+        try {
+            await transporter.sendMail(mailOptions);
+        } catch (mailErr) {
+            console.error('Failed to send password reset OTP email:', mailErr?.message || mailErr);
+        }
 
         return res.json({success: true, message: 'OTP sent to your email'});
 

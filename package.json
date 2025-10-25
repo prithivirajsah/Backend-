@@ -1,22 +1,25 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Node.js Express backend for React frontend",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "server": "nodemon server.js"
+    "dev": "nodemon server.js"
   },
   "dependencies": {
-    "bcrypt": "^6.0.0",
-    "cookie-parser": "^1.4.6",
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
     "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2",
+    "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.17.1",
-    "nodemailer": "^7.0.5"
+    "nodemailer": "^6.9.7",
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
-  }
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["nodejs", "express", "api", "react"],
+  "author": "PrithviRajSah",
+  "license": "MIT"
 }
